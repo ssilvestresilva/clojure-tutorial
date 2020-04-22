@@ -1,0 +1,12 @@
+2010-10-06 09:02:13,631 [WorkerThread-2] INFO  [ServiceProvider]: Executing request startRendering with arguments [114466, 0] on service object { ReflectionServiceObject -> com.dn.gaverzicht.dms.services.DocumentService@4a3a4a3a }
+2010-10-06 09:02:13,634 [WorkerThread-2] DEBUG [RenderingQueue]: Checking to add command to queue: { RenderingCommand - uid: 1286373733634-5423 }
+2010-10-06 09:02:13,634 [WorkerThread-2] DEBUG [RenderingQueue]: Adding command to queue: { RenderingCommand - uid: 1286373733634-5423 }
+2010-10-06 09:02:13,634 [WorkerThread-2] INFO  [ServiceProvider]: Service startRendering returned 1286373733634-5423
+2010-10-06 09:02:13,635 [RenderingQueue] INFO  [RenderingQueue]: Executing: { RenderingCommand - uid: 1286373733634-5423 }
+2010-10-06 09:02:13,635 [RenderingQueue] DEBUG [DocumentService]: Adding completed command: { RenderingCommand - uid: 1286373733634-5423 }
+2010-10-06 09:02:13,636 [RenderingQueue] INFO  [RenderingQueue]: Rendering next image...
+2010-10-06 09:02:13,636 [RenderingQueue] INFO  [RenderingQueue]: Waiting for next command...
+2010-10-06 09:02:14,321 [WorkerThread-1] INFO  [ServerSession]: Posting event group of size: 2
+2010-10-06 09:02:14,531 [WorkerThread-12] INFO  [ServerSession]: Posting event group of size: 2
+2010-10-06 09:02:14,637 [WorkerThread-5] INFO  [ServerSession]: Posting event group of size: 2
+2010-10-06 09:02:14,764 [WorkerThread-0] INFO  [ServerSession]: Processing command object: {arguments=[1286373733634-5423], type=request, name=getRendering}
