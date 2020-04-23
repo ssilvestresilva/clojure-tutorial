@@ -24,9 +24,23 @@
   (with-open [rdr (io/reader file)]
     (doseq [line (line-seq rdr)]
       (if (and (str/includes? line "startRendering") (str/includes? line "ServiceProvider"))
-          (write-file-rendering line fileStartRendering)
+          (do 
+            (if (str/includes? line "returned")
+              (do  
+                (def splitString (str/split line #" "))
+                (def aString (str (get splitString 0) " " (get splitString 1) ";" (get splitString 9)))
+                (write-file-rendering aString fileStartRendering))
+              
+              (do 
+                (def splitString (str/split line #" "))
+                (def aString (str (get splitString 0) " " (get splitString 1) ";" (str/join (re-seq #"[\p{L}\p{N}\-]" (str/replace (str (get splitString 11) " " (get splitString 12)) #", " "-")))))
+                (write-file-rendering aString fileStartRendering)))
+          )
           (if (and (str/includes? line "getRendering") (str/includes? line "ServerSession"))
-            (write-file-rendering line fileGetRendering)))))
+            (do 
+              (def splitString (str/split line #" "))
+              (def aString (str (get splitString 0) " " (get splitString 1) ";" (str/join (re-seq #"[\p{L}\p{N}\-]" (str/replace (get splitString 9) #"arguments=" "")))))
+              (write-file-rendering aString fileGetRendering))))))
   ; (write-export-file fileStartRendering fileGetRendering)
 )
 
