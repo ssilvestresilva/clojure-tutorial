@@ -6,87 +6,40 @@
 (import '(javax.swing JFileChooser)
   '(javax.swing.filechooser FileNameExtensionFilter))
 
-(defn select-file []
-  (let [ extFilter (FileNameExtensionFilter. "Log File" (into-array  ["log"]))
-    filechooser (JFileChooser. "C:/")
-    dummy (.setFileFilter filechooser extFilter)
-    retval (.showOpenDialog filechooser nil) ]
-    (if (= retval JFileChooser/APPROVE_OPTION)
-      (do 
-        (def fileStartRendering "startRendering.txt")
-        (def fileGetRendering "getRendering.txt")
-        (def fileOutPut "output.xml")
-        (def fileCountStartRendering "countStartRendering.txt")
-        (def fileDoubleRendering "doubleRendering.txt")
-        (read-write-file (.getSelectedFile filechooser) fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering))
-    "Select a Log File to run the program.")))
+(defn now [] (quot (System/currentTimeMillis) 1000))
 
-(defn read-write-file [file fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering]
-  (with-open [rdr (io/reader file)]
-    (doseq [line (line-seq rdr)]
-      (if (and (str/includes? line "startRendering") (str/includes? line "ServiceProvider"))
-          (do 
-            (if (str/includes? line "returned")
-              (do  
-                (def splitString1 (str/split line #" "))
-                (def aString (str (get splitString1 0) " " (get splitString1 1) ";" (get splitString1 9) ";uid"))
-                (write-file-rendering aString fileStartRendering))
-              
-              (do 
-                (def splitString2 (str/split line #" "))
-                (def bString (str (get splitString2 0) " " (get splitString2 1) ";" (str/join (re-seq #"[\p{L}\p{N}\-]" (str/replace (str (get splitString2 11) " " (get splitString2 12)) #", " "-")))))
-                (write-file-rendering bString fileStartRendering)))
-          )
-          (if (and (str/includes? line "getRendering") (str/includes? line "ServerSession"))
-            (do 
-              (def splitString3 (str/split line #" "))
-              (def cString (str (get splitString3 0) " " (get splitString3 1) ";" (str/join (re-seq #"[\p{L}\p{N}\-]" (str/replace (get splitString3 9) #"arguments=" "")))))
-              (write-file-rendering cString fileGetRendering))))))
-  (write-export-file fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering)
+(defn data-file [file] 
+  (io/file (spit file ""))
+)
+
+(defn create-files [fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering]
+  (data-file fileStartRendering)
+  (data-file fileGetRendering)
+  (data-file fileOutPut)
+  (data-file fileCountStartRendering)
+  (data-file fileDoubleRendering)
 )
 
 (defn write-file-rendering [line file]
-  (with-open [w (io/writer  (io/resource file) :append true)]
-    (.write w (str line "\n"))))
+  (with-open [w (io/writer  file :append true)]
+    (.write w (str line "\n")))
+)
 
-(defn write-export-file [fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering]
-  (def strStart "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n<report>")
-  (write-file-rendering strStart fileOutPut)
-  (with-open [rdr (io/reader (io/resource fileStartRendering))]
-    (doseq [line (line-seq rdr)]
-      (if (str/includes? line "uid")
-        (do 
-          (write-uid-session line fileOutPut)
-          (if (matching-file (io/resource fileCountStartRendering) uId)
-            (write-file-rendering uId fileDoubleRendering)
-          )
-          (write-file-rendering uId fileCountStartRendering)
-          (with-open [reader (io/reader (io/resource fileStartRendering))]
-            (doseq [line2 (line-seq reader)]
-              (if (and (str/includes? line2 "uid") (str/includes? line2 uId))
-                (do
-                  (def splitString2 (str/split line2 #";"))
-                  (def bString (str "\t \t<start>" (get splitString2 0) "</start>"))
-                  (write-file-rendering bString fileOutPut)
-                  )
-            )))
-          (def getTimeStamp "\t \t<!-- One or more timestamps of getRendering -->")
-          (write-file-rendering getTimeStamp fileOutPut)
-          (with-open [getReader (io/reader (io/resource fileGetRendering))]
-            (doseq [line3 (line-seq getReader)]
-              (if (str/includes? line3 uId)
-                (do
-                  (def splitString3 (str/split line3 #";"))
-                  (def cString (str "\t \t<get>" (get splitString3 0) "</get>"))
-                  (write-file-rendering cString fileOutPut)
-                )
-              )))
-          (def newRendering "\t</rendering>")
-          (write-file-rendering newRendering fileOutPut)
-        )
-        (do
-          (write-doc-session line fileOutPut)))))
-          (write-close-session fileOutPut fileCountStartRendering fileDoubleRendering)
+(defn find-substr [target needle]
+  (.contains target needle)
+)
+
+(defn read-file-as-text [file]
+  (slurp file)
+)
+
+(defn matching-file [file match]
+  (find-substr (read-file-as-text file) match)
+)
+
+(defn count-start-rendering [file]
+  (with-open [rdr (io/reader file)]
+    (count (line-seq rdr)))
 )
 
 (defn write-uid-session [line fileOutPut]
@@ -126,23 +79,87 @@
   (write-file-rendering strStop fileOutPut)
 )
 
-(defn matching-file [file match]
-  (find-substr (read-file-as-text file) match)
+(defn write-export-file [fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering]
+  (def strStart "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n<report>")
+  (write-file-rendering strStart fileOutPut)
+  (with-open [rdr (io/reader fileStartRendering)]
+    (doseq [line (line-seq rdr)]
+      (if (str/includes? line "uid")
+        (do 
+          (write-uid-session line fileOutPut)
+          (if (matching-file fileCountStartRendering uId)
+            (write-file-rendering uId fileDoubleRendering)
+          )
+          (write-file-rendering uId fileCountStartRendering)
+          (with-open [reader (io/reader fileStartRendering)]
+            (doseq [line2 (line-seq reader)]
+              (if (and (str/includes? line2 "uid") (str/includes? line2 uId))
+                (do
+                  (def splitString2 (str/split line2 #";"))
+                  (def bString (str "\t \t<start>" (get splitString2 0) "</start>"))
+                  (write-file-rendering bString fileOutPut)
+                  )
+            )))
+          (def getTimeStamp "\t \t<!-- One or more timestamps of getRendering -->")
+          (write-file-rendering getTimeStamp fileOutPut)
+          (with-open [getReader (io/reader fileGetRendering)]
+            (doseq [line3 (line-seq getReader)]
+              (if (str/includes? line3 uId)
+                (do
+                  (def splitString3 (str/split line3 #";"))
+                  (def cString (str "\t \t<get>" (get splitString3 0) "</get>"))
+                  (write-file-rendering cString fileOutPut)
+                )
+              )))
+          (def newRendering "\t</rendering>")
+          (write-file-rendering newRendering fileOutPut)
+        )
+        (do
+          (write-doc-session line fileOutPut)))))
+          (write-close-session fileOutPut fileCountStartRendering fileDoubleRendering)
 )
 
-(defn read-file-as-text [file]
-  (slurp file)
+(defn read-write-file [file fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering]
+  (with-open [rdr (io/reader file)]
+    (doseq [line (line-seq rdr)]
+      (if (and (str/includes? line "startRendering") (str/includes? line "ServiceProvider"))
+          (do 
+            (if (str/includes? line "returned")
+              (do  
+                (def splitString1 (str/split line #" "))
+                (def aString (str (get splitString1 0) " " (get splitString1 1) ";" (get splitString1 9) ";uid"))
+                (write-file-rendering aString fileStartRendering))
+              
+              (do 
+                (def splitString2 (str/split line #" "))
+                (def bString (str (get splitString2 0) " " (get splitString2 1) ";" (str/join (re-seq #"[\p{L}\p{N}\-]" (str/replace (str (get splitString2 11) " " (get splitString2 12)) #", " "-")))))
+                (write-file-rendering bString fileStartRendering)))
+          )
+          (if (and (str/includes? line "getRendering") (str/includes? line "ServerSession"))
+            (do 
+              (def splitString3 (str/split line #" "))
+              (def cString (str (get splitString3 0) " " (get splitString3 1) ";" (str/join (re-seq #"[\p{L}\p{N}\-]" (str/replace (get splitString3 9) #"arguments=" "")))))
+              (write-file-rendering cString fileGetRendering))))))
+  (write-export-file fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering)
 )
 
-(defn find-substr [target needle]
-  (.contains target needle)
+(defn select-file []
+  (let [ extFilter (FileNameExtensionFilter. "Log File" (into-array  ["log"]))
+    filechooser (JFileChooser. "C:/")
+    dummy (.setFileFilter filechooser extFilter)
+    retval (.showOpenDialog filechooser nil) ]
+    (if (= retval JFileChooser/APPROVE_OPTION)
+      (do 
+        (def fileStartRendering (str "startRendering" (now) ".txt"))
+        (def fileGetRendering (str "getRendering" (now) ".txt"))
+        (def fileOutPut (str "output" (now) ".xml"))
+        (def fileCountStartRendering (str "countStartRendering" (now) ".txt"))
+        (def fileDoubleRendering (str "doubleRendering" (now) ".txt"))
+        (create-files fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering)
+        (read-write-file (.getSelectedFile filechooser) fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering))
+    "Select a Log File to run the program."))
 )
 
-(defn count-start-rendering [file]
-  (with-open [rdr (io/reader (io/resource file))]
-    (count (line-seq rdr)))
-)
-
-(defn -main []
+(defn -main [& args]
   (select-file)
 )
