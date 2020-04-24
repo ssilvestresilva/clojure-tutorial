@@ -145,7 +145,7 @@
 
 (defn select-file []
   (let [ extFilter (FileNameExtensionFilter. "Log File" (into-array  ["log"]))
-    filechooser (JFileChooser. "C:/")
+    filechooser (JFileChooser. (System/getProperty "user.home"))
     dummy (.setFileFilter filechooser extFilter)
     retval (.showOpenDialog filechooser nil) ]
     (if (= retval JFileChooser/APPROVE_OPTION)
@@ -160,6 +160,19 @@
     "Select a Log File to run the program."))
 )
 
+(defn export-file []
+  (let [ extFilter (FileNameExtensionFilter. "XML File" (into-array  ["xml"]))
+    filechooser (JFileChooser. (System/getProperty "user.home"))
+    dummy (.setFileFilter filechooser extFilter)
+    retval (.showSaveDialog filechooser nil) ]
+    (if (= retval JFileChooser/APPROVE_OPTION)
+      (do 
+        (io/output-stream)
+        (println "UHUW"))
+    "Select a Log File to run the program."))
+)
+
 (defn -main [& args]
   (select-file)
+  (export-file)
 )
