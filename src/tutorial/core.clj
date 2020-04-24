@@ -170,5 +170,6 @@
 )
 
 (defn -main [& args]
+  ; Hello, I'm Silvestre Silva and I tried to make this test as simple as possible for a static structure log file, because this is my first time learning and developing anything in the clojure.
   (select-file)
 )
