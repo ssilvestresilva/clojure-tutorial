@@ -20,6 +20,13 @@
   (data-file fileDoubleRendering)
 )
 
+(defn delete-files [fileStartRendering fileGetRendering fileCountStartRendering fileDoubleRendering]
+  (io/delete-file fileStartRendering)
+  (io/delete-file fileGetRendering)
+  (io/delete-file fileCountStartRendering)
+  (io/delete-file fileDoubleRendering)
+)
+
 (defn write-file-rendering [line file]
   (with-open [w (io/writer  file :append true)]
     (.write w (str line "\n")))
@@ -117,6 +124,8 @@
         (do
           (write-doc-session line fileOutPut)))))
           (write-close-session fileOutPut fileCountStartRendering fileDoubleRendering)
+          (delete-files fileStartRendering fileGetRendering fileCountStartRendering fileDoubleRendering)
+          (println (str "Your output file is ready with the name: " fileOutPut))
 )
 
 (defn read-write-file [file fileStartRendering fileGetRendering fileOutPut fileCountStartRendering fileDoubleRendering]
@@ -160,19 +169,6 @@
     "Select a Log File to run the program."))
 )
 
-(defn export-file []
-  (let [ extFilter (FileNameExtensionFilter. "XML File" (into-array  ["xml"]))
-    filechooser (JFileChooser. (System/getProperty "user.home"))
-    dummy (.setFileFilter filechooser extFilter)
-    retval (.showSaveDialog filechooser nil) ]
-    (if (= retval JFileChooser/APPROVE_OPTION)
-      (do 
-        (io/output-stream)
-        (println "UHUW"))
-    "Select a Log File to run the program."))
-)
-
 (defn -main [& args]
   (select-file)
-  (export-file)
 )
